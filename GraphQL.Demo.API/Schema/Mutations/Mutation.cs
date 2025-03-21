@@ -1,8 +1,7 @@
-﻿using Bogus.DataSets;
-using GraphQL.Demo.API.Schema.Queries;
+﻿using GraphQL.Demo.API.DTOs;
 using GraphQL.Demo.API.Schema.Subscriptions;
+using GraphQL.Demo.API.Services.Courses;
 using HotChocolate.Subscriptions;
-using Microsoft.AspNetCore.Connections.Features;
 
 namespace GraphQL.Demo.API.Schema.Mutations
 {
@@ -11,11 +10,11 @@ namespace GraphQL.Demo.API.Schema.Mutations
     /// </summary>
     public class Mutation
     {
-        private readonly List<CourseResult> _courses;
+        private readonly CoursesRepository _coursesRepository;
 
-        public Mutation()
+        public Mutation(CoursesRepository coursesRepository)
         {
-            _courses = new List<CourseResult>();
+            _coursesRepository = coursesRepository;
         }
 
         /// <summary>
@@ -29,18 +28,26 @@ namespace GraphQL.Demo.API.Schema.Mutations
         /// <returns>Returns the created course result</returns>
         public async Task<CourseResult> CreateCourse(CourseInputType courseInputType, [Service] ITopicEventSender topicEventSender)
         {
-            CourseResult courseType = new CourseResult()
+            CourseDTO courseDTO = new CourseDTO()
             {
-                Id = Guid.NewGuid(),
                 Name = courseInputType.Name,
                 Subject = courseInputType.Subject,
-                InstructorId = courseInputType.InstructorId
+                InstructorId = courseInputType.InstructorId,
             };
 
-            _courses.Add(courseType);
-            await topicEventSender.SendAsync(nameof(Subscription.CourseCreated), courseType);
+            courseDTO = await _coursesRepository.Create(courseDTO);
 
-            return courseType;
+            CourseResult course = new CourseResult()
+            {
+                Id = courseDTO.Id,
+                Name = courseDTO.Name,
+                Subject = courseDTO.Subject,
+                InstructorId = courseDTO.InstructorId
+            };
+
+            await topicEventSender.SendAsync(nameof(Subscription.CourseCreated), course);
+
+            return course;
         }
 
         /// <summary>
@@ -56,16 +63,26 @@ namespace GraphQL.Demo.API.Schema.Mutations
         /// <exception cref="Exception">If course not found returns exception</exception>
         public async Task<CourseResult> UpdateCourse(Guid id, CourseInputType courseInputType, [Service] ITopicEventSender topicEventSender)
         {
-            CourseResult course = _courses.FirstOrDefault(c => c.Id == id);
+            CourseDTO courseDTO = await _coursesRepository.GetById(id);
 
-            if (course == null) 
+            if (courseDTO == null)
             {
                 throw new GraphQLException(new Error("Course not found.", "COURSE_NOT_FOUND"));
             }
 
-            course.Name = courseInputType.Name;
-            course.Subject = courseInputType.Subject;
-            course.InstructorId = courseInputType.InstructorId;
+            courseDTO.Name = courseInputType.Name;
+            courseDTO.Subject = courseInputType.Subject;
+            courseDTO.InstructorId = courseInputType.InstructorId;
+
+            courseDTO = await _coursesRepository.Update(courseDTO);
+
+            CourseResult course = new CourseResult()
+            {
+                Id = courseDTO.Id,
+                Name = courseDTO.Name,
+                Subject = courseDTO.Subject,
+                InstructorId = courseDTO.InstructorId
+            };
 
             string updatedCourseTopic = $"{course.Id}_{nameof(Subscription.CourseUpdated)}";
             await topicEventSender.SendAsync(updatedCourseTopic, course);
@@ -78,9 +95,16 @@ namespace GraphQL.Demo.API.Schema.Mutations
         /// </summary>
         /// <param name="id">The id of the course id</param>
         /// <returns>Returns true if deleted successfully else falsef</returns>
-        public bool DeleteCourse(Guid id) 
+        public async Task<bool> DeleteCourse(Guid id)
         {
-            return _courses.RemoveAll(c => c.Id == id) >= 1;
+            try
+            {
+                return await _coursesRepository.Delete(id);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
     }
 }

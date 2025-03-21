@@ -1,11 +1,14 @@
 ﻿using Bogus;
+using GraphQL.Demo.API.DTOs;
+using GraphQL.Demo.API.Services;
+using GraphQL.Demo.API.Services.Courses;
 
 namespace GraphQL.Demo.API.Schema.Queries
 {
     /*
-    Bogus is used to generate fake data.
-    Faker is the property of bogus used to generate the data.
-    */
+    // Bogus is used to generate fake data.
+    // Faker is the property of bogus used to generate the data.
+    
     public class Query
     {
         private readonly Faker<InstructorType> _instructorFaker;
@@ -63,5 +66,54 @@ namespace GraphQL.Demo.API.Schema.Queries
         /// </summary>
         [GraphQLDeprecated("This query is deprecated.")]
         public string Instructions => "Hello GraphQL";
+        }
+        */
+
+    public class Query
+    {
+        private readonly CoursesRepository _coursesRepository;
+
+        public Query(CoursesRepository coursesRepository)
+        {
+            _coursesRepository = coursesRepository;
+        }
+
+        public async Task<IEnumerable<CourseType>> GetCourses()
+        {
+            IEnumerable<CourseDTO> courseDTOs = await _coursesRepository.GetAll();
+
+            return courseDTOs.Select(c => new CourseType()
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Subject = c.Subject,
+                Instructor = new InstructorType()
+                {
+                    Id = c.Instructor.Id,
+                    FirstName = c.Instructor.FirstName,
+                    LastName = c.Instructor.LastName,
+                    Salary = c.Instructor.Salary
+                }
+            });
+        }
+
+        public async Task<CourseType> GetCourseByIdAsync(Guid id)
+        {
+            CourseDTO courseDTO = await _coursesRepository.GetById(id);
+
+            return new CourseType()
+            {
+                Id = courseDTO.Id,
+                Name = courseDTO.Name,
+                Subject = courseDTO.Subject,
+                Instructor = new InstructorType()
+                {
+                    Id = courseDTO.Instructor.Id,
+                    FirstName = courseDTO.Instructor.FirstName,
+                    LastName = courseDTO.Instructor.LastName,
+                    Salary = courseDTO.Instructor.Salary
+                }
+            };
+        }
     }
 }
