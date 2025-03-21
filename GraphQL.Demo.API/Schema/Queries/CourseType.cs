@@ -11,6 +11,11 @@ namespace GraphQL.Demo.API.Schema.Queries
         public Subject Subject { get; set; }
         public Guid InstructorId { get; set; }
 
+        /// <summary>
+        /// The Instructor DataLoader is used to load the instructor data by only querying to db one time.
+        /// </summary>
+        /// <param name="instructorsDataLoader">The instructorsDataLoader.</param>
+        /// <returns>Returns the instructor type.</returns>
         [GraphQLNonNullType]
         public async Task<InstructorType> Instructor([Service] InstructorDataLoader instructorsDataLoader)
         {

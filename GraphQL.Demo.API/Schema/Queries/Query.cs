@@ -2,6 +2,8 @@
 using GraphQL.Demo.API.DTOs;
 using GraphQL.Demo.API.Services;
 using GraphQL.Demo.API.Services.Courses;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace GraphQL.Demo.API.Schema.Queries
 {
@@ -89,6 +91,33 @@ namespace GraphQL.Demo.API.Schema.Queries
                 Subject = c.Subject,
                 InstructorId = c.InstructorId
             });
+        }
+
+        /// <summary>
+        /// Retrieves a paginated list of courses from the database.
+        /// </summary>
+        /// <remarks>
+        /// This method uses GraphQL's built-in pagination via the [UsePaging] attribute.
+        /// It queries the Courses table and maps each course entity to a GraphQL DTO (CourseType).
+        /// The IQueryable return type allows for deferred execution, enabling GraphQL to apply
+        /// additional filters, sorting, and pagination dynamically at the database level.
+        /// </remarks>
+        /// <param name="contextFactory">The factory used to create a new instance of SchoolDbContext.</param>
+        /// <returns>
+        /// A queryable collection of CourseType objects, allowing efficient database pagination.
+        /// </returns>
+        [UsePaging(IncludeTotalCount = true, DefaultPageSize = 10)]
+        public IQueryable<CourseType> GetPaginatedCourses([Service] IDbContextFactory<SchoolDbContext> contextFactory)
+        {
+            SchoolDbContext context = contextFactory.CreateDbContext();
+            
+            return context.Courses.Select(c => new CourseType()
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Subject = c.Subject,
+                InstructorId = c.InstructorId
+            });            
         }
 
         public async Task<CourseType> GetCourseByIdAsync(Guid id)
