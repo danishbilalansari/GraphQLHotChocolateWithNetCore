@@ -1,5 +1,7 @@
 ﻿using Bogus;
 using GraphQL.Demo.API.DTOs;
+using GraphQL.Demo.API.Schema.Filters;
+using GraphQL.Demo.API.Schema.Sorting;
 using GraphQL.Demo.API.Services;
 using GraphQL.Demo.API.Services.Courses;
 using Microsoft.EntityFrameworkCore;
@@ -94,30 +96,35 @@ namespace GraphQL.Demo.API.Schema.Queries
         }
 
         /// <summary>
-        /// Retrieves a paginated list of courses from the database.
+        /// Retrieves a paginated and filterable list of courses from the database.
+        /// The ordering matters, as paging should come before filtering and filtering should come before sorting.
         /// </summary>
         /// <remarks>
-        /// This method uses GraphQL's built-in pagination via the [UsePaging] attribute.
-        /// It queries the Courses table and maps each course entity to a GraphQL DTO (CourseType).
-        /// The IQueryable return type allows for deferred execution, enabling GraphQL to apply
-        /// additional filters, sorting, and pagination dynamically at the database level.
+        /// - Uses GraphQL's built-in pagination via the [UsePaging] attribute to enable efficient data retrieval.
+        /// - Supports dynamic filtering with [UseFiltering], utilizing a custom filter type (CourseFilterType) 
+        ///   to control filtering behavior and exclude specific fields.
+        /// - Queries the Courses table and maps each course entity to a GraphQL DTO (CourseType).
+        /// - The IQueryable return type allows for deferred execution, ensuring that pagination, filtering, and sorting
+        ///   are applied efficiently at the database level, reducing unnecessary data transfer.
         /// </remarks>
         /// <param name="contextFactory">The factory used to create a new instance of SchoolDbContext.</param>
         /// <returns>
-        /// A queryable collection of CourseType objects, allowing efficient database pagination.
+        /// A queryable collection of CourseType objects, enabling efficient pagination and filtering.
         /// </returns>
         [UsePaging(IncludeTotalCount = true, DefaultPageSize = 10)]
+        [UseFiltering(typeof(CourseFilterType))] // Applies custom filtering rules defined in CourseFilterType
+        [UseSorting(typeof(CourseSortType))] // Applies custom sorting rules defined in CourseSortType
         public IQueryable<CourseType> GetPaginatedCourses([Service] IDbContextFactory<SchoolDbContext> contextFactory)
         {
             SchoolDbContext context = contextFactory.CreateDbContext();
-            
+
             return context.Courses.Select(c => new CourseType()
             {
                 Id = c.Id,
                 Name = c.Name,
                 Subject = c.Subject,
                 InstructorId = c.InstructorId
-            });            
+            });
         }
 
         public async Task<CourseType> GetCourseByIdAsync(Guid id)

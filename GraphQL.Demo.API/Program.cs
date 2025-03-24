@@ -19,7 +19,8 @@ Configures the GraphQL server with essential features:
 - In-memory subscriptions to enable real-time event handling without an external message broker.
 - DbContext factory registration to provide efficient database context instances per request, avoiding scope issues.
 - Data loader integration to optimize database access by batching and caching instructor queries, reducing redundant calls.
-*/
+- Adds filtering support to allow dynamic querying of data based on specified criteria.
+ */
 services
     .AddGraphQLServer()
     .AddQueryType<Query>() // Registers query operations (e.g., fetching courses, students, instructors).
@@ -27,7 +28,9 @@ services
     .AddSubscriptionType<Subscription>() // Enables real-time updates via subscriptions.
     .AddInMemorySubscriptions() // Uses in-memory event handling for real-time data updates.
     .RegisterDbContextFactory<SchoolDbContext>() // Ensures DbContext instances are properly managed in GraphQL requests.
-    .AddDataLoader<InstructorDataLoader>(); // Uses a data loader to efficiently batch and cache instructor queries.
+    .AddDataLoader<InstructorDataLoader>() // Uses a data loader to efficiently batch and cache instructor queries.
+    .AddFiltering() // Enables filtering support for GraphQL queries.
+    .AddSorting(); // Enables sorting support for GraphQL queries.
 
 // Retrieves the database connection string from the configuration file (appsettings.json or environment variables).
 string connectionString = configuration.GetConnectionString("default");
@@ -39,7 +42,7 @@ Registers a pooled DbContext factory for efficient database access:
 - Improves performance and reduces memory usage by reusing context instances when possible.
 - Configures SQLite as the database provider with the specified connection string.
 */
-services.AddPooledDbContextFactory<SchoolDbContext>(o => o.UseSqlite(connectionString));
+services.AddPooledDbContextFactory<SchoolDbContext>(o => o.UseSqlite(connectionString).LogTo(Console.WriteLine));
 
 services.AddScoped<CoursesRepository>();
 services.AddScoped<InstructorsRepository>();
