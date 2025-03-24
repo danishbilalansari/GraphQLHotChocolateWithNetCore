@@ -30,7 +30,8 @@ services
     .RegisterDbContextFactory<SchoolDbContext>() // Ensures DbContext instances are properly managed in GraphQL requests.
     .AddDataLoader<InstructorDataLoader>() // Uses a data loader to efficiently batch and cache instructor queries.
     .AddFiltering() // Enables filtering support for GraphQL queries.
-    .AddSorting(); // Enables sorting support for GraphQL queries.
+    .AddSorting() // Enables sorting support for GraphQL queries.
+    .AddProjections(); // Enables projecttions support for GraphQL queries.
 
 // Retrieves the database connection string from the configuration file (appsettings.json or environment variables).
 string connectionString = configuration.GetConnectionString("default");

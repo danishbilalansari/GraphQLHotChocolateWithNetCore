@@ -97,7 +97,7 @@ namespace GraphQL.Demo.API.Schema.Queries
 
         /// <summary>
         /// Retrieves a paginated and filterable list of courses from the database.
-        /// The ordering matters, as paging should come before filtering and filtering should come before sorting.
+        /// The ordering matters, paging > projections > filtering > sorting
         /// </summary>
         /// <remarks>
         /// - Uses GraphQL's built-in pagination via the [UsePaging] attribute to enable efficient data retrieval.
@@ -112,6 +112,7 @@ namespace GraphQL.Demo.API.Schema.Queries
         /// A queryable collection of CourseType objects, enabling efficient pagination and filtering.
         /// </returns>
         [UsePaging(IncludeTotalCount = true, DefaultPageSize = 10)]
+        [UseProjection]
         [UseFiltering(typeof(CourseFilterType))] // Applies custom filtering rules defined in CourseFilterType
         [UseSorting(typeof(CourseSortType))] // Applies custom sorting rules defined in CourseSortType
         public IQueryable<CourseType> GetPaginatedCourses([Service] IDbContextFactory<SchoolDbContext> contextFactory)
