@@ -1,3 +1,5 @@
+using FirebaseAdmin;
+using FirebaseAdminAuthentication.DependencyInjection.Extensions;
 using GraphQL.Demo.API.DataLoaders;
 using GraphQL.Demo.API.Schema.Mutations;
 using GraphQL.Demo.API.Schema.Queries;
@@ -31,7 +33,21 @@ services
     .AddDataLoader<InstructorDataLoader>() // Uses a data loader to efficiently batch and cache instructor queries.
     .AddFiltering() // Enables filtering support for GraphQL queries.
     .AddSorting() // Enables sorting support for GraphQL queries.
-    .AddProjections(); // Enables projecttions support for GraphQL queries.
+    .AddProjections() // Enables projecttions support for GraphQL queries.
+    .AddAuthorization(); // Adds the default authorization support to the schema that uses Microsoft.AspNetCore.Authorization.
+
+// Registers FirebaseApp as a singleton, ensuring a single instance is shared across the application.
+// This initializes Firebase using default settings (from appsettings.json or environment variables).
+services.AddSingleton(FirebaseApp.Create());
+
+/*
+ * Configures Firebase Authentication in the application.
+ * This method likely:
+ * - Enables JWT-based authentication using Firebase-issued tokens.
+ * - Registers authentication handlers for Firebase Auth.
+ * - Allows secure API access based on Firebase user authentication.
+ */
+services.AddFirebaseAuthentication();
 
 // Retrieves the database connection string from the configuration file (appsettings.json or environment variables).
 string connectionString = configuration.GetConnectionString("default");
@@ -70,6 +86,8 @@ using (IServiceScope scope = app.Services.CreateScope())
 }
 
 app.UseRouting();
+
+app.UseAuthorization();
 
 app.UseWebSockets();
 

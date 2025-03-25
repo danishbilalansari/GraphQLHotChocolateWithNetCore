@@ -1,7 +1,10 @@
-﻿using GraphQL.Demo.API.DTOs;
+﻿using FirebaseAdminAuthentication.DependencyInjection.Models;
+using GraphQL.Demo.API.DTOs;
 using GraphQL.Demo.API.Schema.Subscriptions;
 using GraphQL.Demo.API.Services.Courses;
+using HotChocolate.Authorization;
 using HotChocolate.Subscriptions;
+using System.Security.Claims;
 
 namespace GraphQL.Demo.API.Schema.Mutations
 {
@@ -26,8 +29,16 @@ namespace GraphQL.Demo.API.Schema.Mutations
         /// to subscribers in a GraphQL Subscription. It allows to send events to specific topic.
         /// </param>
         /// <returns>Returns the created course result</returns>
-        public async Task<CourseResult> CreateCourse(CourseInputType courseInputType, [Service] ITopicEventSender topicEventSender)
+        [Authorize]
+        public async Task<CourseResult> CreateCourse(CourseInputType courseInputType,
+            [Service] ITopicEventSender topicEventSender,
+            ClaimsPrincipal claimsPrincipal)
         {
+            string userId = claimsPrincipal.FindFirstValue(FirebaseUserClaimType.ID);
+            string email = claimsPrincipal.FindFirstValue(FirebaseUserClaimType.EMAIL);
+            string username = claimsPrincipal.FindFirstValue(FirebaseUserClaimType.USERNAME);
+            string verified = claimsPrincipal.FindFirstValue(FirebaseUserClaimType.EMAIL_VERIFIED);
+
             CourseDTO courseDTO = new CourseDTO()
             {
                 Name = courseInputType.Name,
@@ -61,6 +72,7 @@ namespace GraphQL.Demo.API.Schema.Mutations
         /// </param>
         /// <returns>Returns the updated course result</returns>
         /// <exception cref="Exception">If course not found returns exception</exception>
+        [Authorize]
         public async Task<CourseResult> UpdateCourse(Guid id, CourseInputType courseInputType, [Service] ITopicEventSender topicEventSender)
         {
             CourseDTO courseDTO = await _coursesRepository.GetById(id);
@@ -95,6 +107,7 @@ namespace GraphQL.Demo.API.Schema.Mutations
         /// </summary>
         /// <param name="id">The id of the course id</param>
         /// <returns>Returns true if deleted successfully else falsef</returns>
+        [Authorize]
         public async Task<bool> DeleteCourse(Guid id)
         {
             try

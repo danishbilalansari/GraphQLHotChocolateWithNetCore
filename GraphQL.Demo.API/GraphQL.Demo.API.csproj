@@ -8,7 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="Bogus" Version="35.6.2" />
+    <PackageReference Include="FirebaseAdminAuthentication.DependencyInjection" Version="1.1.0" />
     <PackageReference Include="HotChocolate.AspNetCore" Version="15.1.0" />
+    <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="15.1.1" />
     <PackageReference Include="HotChocolate.Data.EntityFramework" Version="15.1.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.3">
       <PrivateAssets>all</PrivateAssets>
