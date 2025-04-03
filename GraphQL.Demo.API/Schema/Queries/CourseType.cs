@@ -1,4 +1,5 @@
-﻿using GraphQL.Demo.API.DataLoaders;
+﻿using FirebaseAdmin.Auth;
+using GraphQL.Demo.API.DataLoaders;
 using GraphQL.Demo.API.DTOs;
 using GraphQL.Demo.API.Models;
 using HotChocolate.Types;
@@ -43,5 +44,27 @@ namespace GraphQL.Demo.API.Schema.Queries
         }
 
         public IEnumerable<StudentType> Students { get; set; }
+
+        [IsProjected(true)]
+        public string CreatorId { get; set; }
+
+        /// <summary>
+        /// Resolves the creator of the course by fetching user details from Firebase Authentication.
+        /// </summary>
+        /// <param name="userDataLoader">The data loader used to batch and cache user retrieval requests.</param>
+        /// <returns>
+        /// Returns the <see cref="UserType"/> representing the creator of the course, or null if CreatorId is not set.
+        /// </returns>
+        public async Task<UserType> Creator([Service] UserDataLoader userDataLoader)
+        {
+            // If CreatorId is null, return null immediately to avoid unnecessary API calls.
+            if (CreatorId == null) return null;
+
+            // Fetches the user details from Firebase Authentication using the CreatorId.
+            UserRecord user = await FirebaseAuth.DefaultInstance.GetUserAsync(CreatorId);
+
+            // Uses the UserDataLoader to efficiently batch and cache user retrieval requests.
+            return await userDataLoader.LoadAsync(CreatorId, CancellationToken.None);
+        }
     }
 }

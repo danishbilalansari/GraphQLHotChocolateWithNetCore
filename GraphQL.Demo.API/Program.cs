@@ -1,5 +1,6 @@
 using FirebaseAdmin;
 using FirebaseAdminAuthentication.DependencyInjection.Extensions;
+using FirebaseAdminAuthentication.DependencyInjection.Models;
 using GraphQL.Demo.API.DataLoaders;
 using GraphQL.Demo.API.Schema.Mutations;
 using GraphQL.Demo.API.Schema.Queries;
@@ -31,6 +32,7 @@ services
     .AddInMemorySubscriptions() // Uses in-memory event handling for real-time data updates.
     .RegisterDbContextFactory<SchoolDbContext>() // Ensures DbContext instances are properly managed in GraphQL requests.
     .AddDataLoader<InstructorDataLoader>() // Uses a data loader to efficiently batch and cache instructor queries.
+    .AddDataLoader<UserDataLoader>() // Uses a data loader to efficiently batch and cache user queries.
     .AddFiltering() // Enables filtering support for GraphQL queries.
     .AddSorting() // Enables sorting support for GraphQL queries.
     .AddProjections() // Enables projecttions support for GraphQL queries.
@@ -48,6 +50,14 @@ services.AddSingleton(FirebaseApp.Create());
  * - Allows secure API access based on Firebase user authentication.
  */
 services.AddFirebaseAuthentication();
+
+/*
+ * Defines an "IsAdmin" authorization policy that restricts access to users with a specific email.
+ * - Uses Firebase authentication claims to validate the user's identity.
+ * - Requires the user to have an EMAIL claim matching "dansari@calrom.com".
+ * - This policy can be applied to controllers or actions using [Authorize(Policy = "IsAdmin")].
+ */
+services.AddAuthorization(o => o.AddPolicy("IsAdmin", p => p.RequireClaim(FirebaseUserClaimType.EMAIL, "dansari@calrom.com")));
 
 // Retrieves the database connection string from the configuration file (appsettings.json or environment variables).
 string connectionString = configuration.GetConnectionString("default");

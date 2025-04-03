@@ -124,7 +124,8 @@ namespace GraphQL.Demo.API.Schema.Queries
                 Id = c.Id,
                 Name = c.Name,
                 Subject = c.Subject,
-                InstructorId = c.InstructorId
+                InstructorId = c.InstructorId,
+                CreatorId = c.CreatorId
             });
         }
 

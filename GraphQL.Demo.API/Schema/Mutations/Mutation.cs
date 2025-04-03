@@ -35,15 +35,13 @@ namespace GraphQL.Demo.API.Schema.Mutations
             ClaimsPrincipal claimsPrincipal)
         {
             string userId = claimsPrincipal.FindFirstValue(FirebaseUserClaimType.ID);
-            string email = claimsPrincipal.FindFirstValue(FirebaseUserClaimType.EMAIL);
-            string username = claimsPrincipal.FindFirstValue(FirebaseUserClaimType.USERNAME);
-            string verified = claimsPrincipal.FindFirstValue(FirebaseUserClaimType.EMAIL_VERIFIED);
 
             CourseDTO courseDTO = new CourseDTO()
             {
                 Name = courseInputType.Name,
                 Subject = courseInputType.Subject,
                 InstructorId = courseInputType.InstructorId,
+                CreatorId = userId
             };
 
             courseDTO = await _coursesRepository.Create(courseDTO);
@@ -73,13 +71,23 @@ namespace GraphQL.Demo.API.Schema.Mutations
         /// <returns>Returns the updated course result</returns>
         /// <exception cref="Exception">If course not found returns exception</exception>
         [Authorize]
-        public async Task<CourseResult> UpdateCourse(Guid id, CourseInputType courseInputType, [Service] ITopicEventSender topicEventSender)
+        public async Task<CourseResult> UpdateCourse(Guid id, 
+            CourseInputType courseInputType, 
+            [Service] ITopicEventSender topicEventSender, 
+            ClaimsPrincipal claimsPrincipal)
         {
+            string userId = claimsPrincipal.FindFirstValue(FirebaseUserClaimType.ID);
+            
             CourseDTO courseDTO = await _coursesRepository.GetById(id);
 
             if (courseDTO == null)
             {
                 throw new GraphQLException(new Error("Course not found.", "COURSE_NOT_FOUND"));
+            }
+
+            if(courseDTO.CreatorId != userId)
+            {
+                throw new GraphQLException(new Error("You do not have permission to update this course.", "INVALID_PERMISSION"));
             }
 
             courseDTO.Name = courseInputType.Name;
@@ -107,7 +115,7 @@ namespace GraphQL.Demo.API.Schema.Mutations
         /// </summary>
         /// <param name="id">The id of the course id</param>
         /// <returns>Returns true if deleted successfully else falsef</returns>
-        [Authorize]
+        [Authorize(Policy = "IsAdmin")]
         public async Task<bool> DeleteCourse(Guid id)
         {
             try
