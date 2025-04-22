@@ -75,71 +75,47 @@ namespace GraphQL.Demo.API.Schema.Queries
 
     public class Query
     {
-        private readonly CoursesRepository _coursesRepository;
-
-        public Query(CoursesRepository coursesRepository)
-        {
-            _coursesRepository = coursesRepository;
-        }
-
-        public async Task<IEnumerable<CourseType>> GetCourses()
-        {
-            IEnumerable<CourseDTO> courseDTOs = await _coursesRepository.GetAll();
-
-            return courseDTOs.Select(c => new CourseType()
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Subject = c.Subject,
-                InstructorId = c.InstructorId
-            });
-        }
-
         /// <summary>
-        /// Retrieves a paginated and filterable list of courses from the database.
-        /// The ordering matters, paging > projections > filtering > sorting
+        /// Performs a search across multiple entities (courses and instructors) by a keyword term.
         /// </summary>
-        /// <remarks>
-        /// - Uses GraphQL's built-in pagination via the [UsePaging] attribute to enable efficient data retrieval.
-        /// - Supports dynamic filtering with [UseFiltering], utilizing a custom filter type (CourseFilterType) 
-        ///   to control filtering behavior and exclude specific fields.
-        /// - Queries the Courses table and maps each course entity to a GraphQL DTO (CourseType).
-        /// - The IQueryable return type allows for deferred execution, ensuring that pagination, filtering, and sorting
-        ///   are applied efficiently at the database level, reducing unnecessary data transfer.
-        /// </remarks>
-        /// <param name="contextFactory">The factory used to create a new instance of SchoolDbContext.</param>
+        /// <param name="term">The search term to look for in course names and instructor names.</param>
+        /// <param name="contextFactory">Factory used to create a new instance of the SchoolDbContext.</param>
         /// <returns>
-        /// A queryable collection of CourseType objects, enabling efficient pagination and filtering.
+        /// A combined list of results (courses and instructors) that match the search term,
+        /// returned as a collection of <see cref="ISearchResultType"/>.
         /// </returns>
-        [UsePaging(IncludeTotalCount = true, DefaultPageSize = 10)]
-        [UseProjection]
-        [UseFiltering(typeof(CourseFilterType))] // Applies custom filtering rules defined in CourseFilterType
-        [UseSorting(typeof(CourseSortType))] // Applies custom sorting rules defined in CourseSortType
-        public IQueryable<CourseType> GetPaginatedCourses([Service] IDbContextFactory<SchoolDbContext> contextFactory)
+        public async Task<IEnumerable<ISearchResultType>> Search(string term, [Service] IDbContextFactory<SchoolDbContext> contextFactory)
         {
+            // Create a new instance of SchoolDbContext using the factory
             SchoolDbContext context = contextFactory.CreateDbContext();
 
-            return context.Courses.Select(c => new CourseType()
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Subject = c.Subject,
-                InstructorId = c.InstructorId,
-                CreatorId = c.CreatorId
-            });
-        }
+            // Search for courses where the course name contains the search term
+            IEnumerable<CourseType> courses = await context.Courses
+                .Where(c => c.Name.Contains(term))
+                .Select(c => new CourseType()
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Subject = c.Subject,
+                    InstructorId = c.InstructorId,
+                    CreatorId = c.CreatorId
+                }).ToListAsync();
 
-        public async Task<CourseType> GetCourseByIdAsync(Guid id)
-        {
-            CourseDTO courseDTO = await _coursesRepository.GetById(id);
+            // Search for instructors where either the first or last name contains the search term
+            IEnumerable<InstructorType> instructors = await context.Instructors
+                .Where(i => i.FirstName.Contains(term) || i.LastName.Contains(term))
+                .Select(i => new InstructorType()
+                {
+                    Id = i.Id,
+                    FirstName = i.FirstName,
+                    LastName = i.LastName,
+                    Salary = i.Salary
+                }).ToListAsync();
 
-            return new CourseType()
-            {
-                Id = courseDTO.Id,
-                Name = courseDTO.Name,
-                Subject = courseDTO.Subject,
-                InstructorId = courseDTO.InstructorId
-            };
+            // Combine both result sets into a single list of ISearchResultType (shared interface between CourseType and InstructorType)
+            return new List<ISearchResultType>()
+                .Concat(courses)
+                .Concat(instructors);
         }
     }
 }

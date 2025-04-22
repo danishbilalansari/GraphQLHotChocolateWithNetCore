@@ -36,7 +36,10 @@ services
     .AddFiltering() // Enables filtering support for GraphQL queries.
     .AddSorting() // Enables sorting support for GraphQL queries.
     .AddProjections() // Enables projecttions support for GraphQL queries.
-    .AddAuthorization(); // Adds the default authorization support to the schema that uses Microsoft.AspNetCore.Authorization.
+    .AddAuthorization() // Adds the default authorization support to the schema that uses Microsoft.AspNetCore.Authorization.
+    .AddType<CourseType>() // Registers the GraphQL type for Course DTO (used to shape the course response).
+    .AddType<InstructorType>() // Registers the GraphQL type for Instructor DTO (used to shape the instructor response).
+    .AddTypeExtension<CourseQuery>(); // Registers CourseQuery as a GraphQL type extension to organize related query fields.
 
 // Registers FirebaseApp as a singleton, ensuring a single instance is shared across the application.
 // This initializes Firebase using default settings (from appsettings.json or environment variables).
