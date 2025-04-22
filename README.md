@@ -1,4 +1,4 @@
-# GraphQLHotChocolateWithNet8
+# GraphQLHotChocolateWithNetCore
 Simple project with the basic implementation of almost all concepts of hotchocolate graphQL. Whats implemented?
 
 1. Queries
